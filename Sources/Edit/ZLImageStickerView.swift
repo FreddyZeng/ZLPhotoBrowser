@@ -29,7 +29,7 @@ import UIKit
 class ZLImageStickerView: ZLBaseStickerView {
     private let image: UIImage
     
-    private static let edgeInset: CGFloat = 20
+    private static let edgeInset: CGFloat = 10
     
     private lazy var imageView: UIImageView = {
         let view = UIImageView(image: image)

@@ -138,6 +138,14 @@ open class ZLEditImageViewController: UIViewController {
     // Show text and image stickers.
     private lazy var stickersContainer = UIView()
     
+    private lazy var stickerGestureCoordinator: ZLStickerGestureCoordinator = {
+        let coordinator = ZLStickerGestureCoordinator(container: stickersContainer, reportingView: view)
+        mainScrollView.pinchGestureRecognizer?.require(toFail: coordinator.pinchGesture)
+        mainScrollView.panGestureRecognizer.require(toFail: coordinator.panGesture)
+        panGes.require(toFail: coordinator.panGesture)
+        return coordinator
+    }()
+    
     // 处理好的马赛克图片
     private var mosaicImage: UIImage?
     
@@ -1588,9 +1596,7 @@ open class ZLEditImageViewController: UIViewController {
     
     private func configSticker(_ sticker: ZLBaseStickerView) {
         sticker.delegate = self
-        mainScrollView.pinchGestureRecognizer?.require(toFail: sticker.pinchGes)
-        mainScrollView.panGestureRecognizer.require(toFail: sticker.panGes)
-        panGes.require(toFail: sticker.panGes)
+        stickerGestureCoordinator.bindSticker(sticker)
     }
     
     private func recalculateStickersFrame(_ oldSize: CGSize, _ oldAngle: CGFloat, _ newAngle: CGFloat) {
@@ -2006,8 +2012,7 @@ extension ZLEditImageViewController: ZLStickerViewDelegate {
         }
     }
     
-    func stickerOnOperation(_ sticker: ZLBaseStickerView, panGes: UIPanGestureRecognizer) {
-        let point = panGes.location(in: view)
+    func stickerOnOperation(_ sticker: ZLBaseStickerView, locationInView point: CGPoint) {
         if ashbinView.frame.contains(point) {
             ashbinView.backgroundColor = .zl.trashCanBackgroundTintColor
             ashbinImgView.isHighlighted = true
@@ -2029,15 +2034,14 @@ extension ZLEditImageViewController: ZLStickerViewDelegate {
         }
     }
     
-    func stickerEndOperation(_ sticker: ZLBaseStickerView, panGes: UIPanGestureRecognizer) {
+    func stickerEndOperation(_ sticker: ZLBaseStickerView, locationInView point: CGPoint?) {
         setToolView(show: true)
         ashbinView.layer.removeAllAnimations()
         ashbinView.isHidden = true
         
         var endState: ZLBaseStickertState? = sticker.state
         
-        let point = panGes.location(in: view)
-        if ashbinView.frame.contains(point) {
+        if let point, ashbinView.frame.contains(point) {
             sticker.moveToAshbin()
             endState = nil
         }
