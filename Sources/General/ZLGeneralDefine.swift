@@ -95,9 +95,16 @@ func deviceIsiPad() -> Bool {
 
 func deviceSafeAreaInsets() -> UIEdgeInsets {
     var insets: UIEdgeInsets = .zero
-    
+        
     if #available(iOS 11, *) {
-        insets = UIApplication.shared.zl.activeWindow?.safeAreaInsets ?? .zero
+        if let window = UIApplication.shared.zl.activeWindow {
+            insets = window.safeAreaInsets
+        } else if #available(iOS 13.0, *) {
+            // 系统权限弹窗期间 app 会处于 foregroundInactive，activeWindow 会返回 nil，
+            // 导致安全区被误读为 .zero（进而把刘海屏误判为非刘海屏、导航栏布局错误）。
+            // window.safeAreaInsets 与 app 激活状态无关，这里回退到 scene 中的 window。
+            insets = UIApplication.shared.zl.connectedWindowScene?.windows.first?.safeAreaInsets ?? .zero
+        }
     }
     
     return insets
