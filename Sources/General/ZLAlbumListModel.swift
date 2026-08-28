@@ -97,28 +97,33 @@ public class ZLAlbumListModel: NSObject {
     
     @discardableResult
     public func preloadPhotos(loadAll: Bool = false) -> [ZLPhotoModel] {
+        let snapshot = result
+
         // 受限访问时，如果首次未选择任何照片，currentLoadIndex会为0，那么后续再添加照片的时候，需要重置该值来触发重新加载
         // bug: https://github.com/longitachi/ZLPhotoBrowser/issues/1016
-        if currentLoadIndex == 0, models.count != result.count {
-            currentLoadIndex = result.count
+        if currentLoadIndex == 0, models.count != snapshot.count {
+            currentLoadIndex = snapshot.count
             models.removeAll()
         }
         
         guard currentLoadIndex > 0 else { return [] }
+
+        let loadEndIndex = min(currentLoadIndex, snapshot.count)
+        guard loadEndIndex > 0 else { return [] }
         
         var loadCount = onceLoadCount
-        let isFirstLoad = currentLoadIndex == result.count
+        let isFirstLoad = loadEndIndex == snapshot.count
         if isFirstLoad {
             // mod横竖屏列数的最小公倍数，并在第一次加载时候把余数给加载了，从而使后续分页加载的数据均为整数行
-            let mod = result.count % lcmColumns
+            let mod = snapshot.count % lcmColumns
             loadCount = onceLoadCount + mod
         }
         
-        let minIndex = loadAll ? 0 : max(0, currentLoadIndex - loadCount)
-        let indexSet = IndexSet(minIndex..<currentLoadIndex)
+        let minIndex = loadAll ? 0 : max(0, loadEndIndex - loadCount)
+        let indexSet = IndexSet(minIndex..<loadEndIndex)
         currentLoadIndex = minIndex
         let models = ZLPhotoManager.fetchPhoto(
-            in: result,
+            in: snapshot,
             ascending: ZLPhotoUIConfiguration.default().sortAscending,
             allowSelectImage: ZLPhotoConfiguration.default().allowSelectImage,
             allowSelectVideo: ZLPhotoConfiguration.default().allowSelectVideo,
